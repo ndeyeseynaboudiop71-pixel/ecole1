@@ -1,7 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createMiddlewareClient } from "@/lib/supabase/middleware";
 
-const PUBLIC_ROUTES = ["/", "/login", "/formations", "/contact", "/faq", "/candidature"];
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/forgot-password",
+  "/formations",
+  "/contact",
+  "/faq",
+  "/candidature",
+  "/403",
+];
 const PUBLIC_ROUTE_PREFIXES = ["/formations/", "/actualites", "/evenements"];
 
 function isPublicRoute(pathname: string): boolean {
@@ -13,6 +22,18 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isPublicRoute(pathname)) {
+    if (pathname === "/login") {
+      const supabase = createMiddlewareClient(request);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = "/dashboard";
+        redirectUrl.search = "";
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
     return NextResponse.next();
   }
 
@@ -32,5 +53,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
